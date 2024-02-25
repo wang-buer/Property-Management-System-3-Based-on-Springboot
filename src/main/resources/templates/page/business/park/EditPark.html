@@ -1,0 +1,141 @@
+<div class="layuimini-main">
+
+    <div class="layui-form layuimini-form" lay-filter="updateSubmit">
+        <input type="hidden" name="id">
+        <input type="hidden" name="parkIds" id="parkIds">
+        <input type="hidden" name="ownerIds" id="ownerIds">
+        <div class="layui-form-item">
+            <label class="layui-form-label required">车位编号</label>
+            <div class="layui-input-block">
+                <select name="parkId" lay-verify="required"  id="parkId" lay-search="">
+                    <option value="">选择编号</option>
+                </select>
+            </div>
+        </div>
+
+
+
+        <div class="layui-form-item layui-form-text">
+            <label class="layui-form-label required" >费用起始日期</label>
+            <div class="layui-input-block">
+                <input type="text" name="payDate" id="date"
+                       lay-verify="date" placeholder="yyyy-MM-dd" lay-verify="required" autocomplete="off" class="layui-input date">
+            </div>
+        </div>
+        <div class="layui-form-item layui-form-text">
+            <label class="layui-form-label required">费用截止日期</label>
+            <div class="layui-input-block">
+                <input type="text" name="endDate" id="date2"
+                       lay-verify="date" placeholder="yyyy-MM-dd" lay-verify="required" autocomplete="off" class="layui-input date">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">金额</label>
+            <div class="layui-input-block">
+                <input type="number" name="money" id="money" lay-verify="required|number|money" lay-reqtext="金额不能为空" placeholder="请输入金额" value=""
+                       class="layui-input">
+            </div>
+        </div>
+
+
+
+        <div class="layui-form-item layui-form-text">
+            <label class="layui-form-label">备注信息</label>
+            <div class="layui-input-block">
+                <textarea name="remarks" class="layui-textarea" placeholder="请输入备注信息"></textarea>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button class="layui-btn layui-btn-normal" lay-submit lay-filter="saveBtn" id="submit">确认保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    layui.use(['form', 'table','laydate'], function () {
+        var form = layui.form,
+            layer = layui.layer,
+            table = layui.table,
+            laydate=layui.laydate,
+            $ = layui.$;
+
+
+
+
+        //查询所有的车辆信息并渲染到select中
+        $.get("parking/queryAll",{},function (data) {
+            var list=data;
+            var select =document.getElementById("parkId");
+            if(list!=null || list.size()>0){
+                for(var c in list){
+                    var option=document.createElement("option");
+                    option.setAttribute("value",list[c].id);
+                    option.innerText=list[c].numbers;
+                    select.appendChild(option);
+                    var selectparkId=$("#parkIds").val();
+                    //遍历选中状态
+                    if(selectparkId==list[c].id){
+                        option.setAttribute("selected","selected");
+                        layui.form.render('select');
+                    }
+                }
+            }
+            form.render('select');
+        },"json");
+
+        // 当前弹出层，防止ID被覆盖
+        var parentIndex = layer.index;
+
+        //多个事件格式的渲染
+        lay('.date').each(function() {
+            laydate.render({
+                elem : this,//元素
+                trigger : 'click'//,//怎么触发
+                // type : 'datetime',//格式
+                // format : 'yyyy-MM-dd'
+            });
+        });
+
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+
+            $.ajax({
+                type:'post',
+                data:JSON.stringify(data.field),
+                contentType: "application/json",
+                dateType: "json",
+                url:'carcharge/editData',
+                success: function (data) {
+                    if(data.code == 200){
+
+                        layer.open({title:"提示",btnAlign: 'c',icon : 1,content:data.msg,yes:function(){
+                                //重载父窗口 关闭当前窗口
+                                parent.window.location.reload();
+                                var iframeIndex=parent.layer.getFrameIndex(window.name);
+                                parent.layer.close(iframeIndex);
+                            }});
+                        document.getElementById("submit").disabled=true;
+                    }else if(data.code == 300){
+                        layer.msg(data.msg);
+                    }
+                    else if(data.code == 400){
+                        layer.msg(data.msg);
+                    }
+                },
+                error: function () {
+                    layer.open({title: "提示", btnAlign: 'c', content: "网络异常！"});
+                }
+            });
+            return false;
+        });
+
+
+
+
+
+    });
+
+</script>
